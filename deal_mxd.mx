@@ -1,0 +1,68 @@
+﻿local json_setting = io.handler.json.load('''C:\ProgramData\EastWave\project_setting.json''');
+local temp_workfile = json_setting.work_file;
+
+local work_path = fs.filename(json_setting.work_file);
+
+local mxd_path = work_path['fullpath']..".data".."/"..work_path['name']..".mxd";
+
+
+//local temp_split = temp_workfile.split('''\''');
+
+//local mxd_path = json_setting.work_catalog..'''\'''..temp_split[end]..'''.data\'''..temp_split[end][:end-5]..'''.mxd''';
+local result = io.load_var(mxd_path);
+//local path = '''C:\Users\SDJ-JSJ074\Desktop\opt_tool\rcs_test.ewp2.data\''';
+//local result = io.load_var(path.."rcs_test.mxd");
+
+local create_goal_func;
+
+local enable_custom_goal = json_setting.enable_custom_goal;
+local mode_id = json_setting["workmode.id"];
+local goal_func = json_setting.goal_func;
+local goal = json_setting.goal;
+
+if(enable_custom_goal == 1)
+{
+    create_goal_func=function()
+    {
+        local opt_goal = eval1(json_setting.custom_goal, table{result: result});
+
+        return opt_goal;
+    };
+}
+else{
+    create_goal_func = function()
+    {
+        local opt_goal;
+        local x, y;
+
+        if(mode_id == 0)
+        {
+            if(goal ==0)
+            {
+                x,y = result.results[0].idata.get_data(,table{index_freq:0;component:0; quantity:0});
+            }
+        }
+        else if(mode_id == 1)
+        {
+            if(goal == 0)
+            {
+                y = result.key_results.Transmission[0];
+            }
+            else if(goal == 1)
+            {
+                y = result.key_results.BSE[0];
+            }
+        }
+
+        opt_goal = eval1(goal_func.."(y)", table('y',y));
+
+        return opt_goal;
+    };    
+}
+
+local opt_goal = create_goal_func();
+//println(opt_goal)
+
+//local path2 = '''C:\Users\SDJ-JSJ074\Desktop\opt_tool\''';
+local opt_goal2 = string.format("%.6f",opt_goal);
+io.save_txt(json_setting.work_catalog.."output_data.txt", opt_goal2);
